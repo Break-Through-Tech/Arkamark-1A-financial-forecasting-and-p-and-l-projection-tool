@@ -41,7 +41,7 @@ This project offers an excellent opportunity to bridge financial domain expertis
 # Financial Forecasting & P&L Projection Tool
 
 **Company / Org:** Arkamark  
-**Challenge Advisor:** Ram Kumar, kumar.k@arkamark.com 
+**Challenge Advisor:** Ram Kumar, kumar.k@arkamark.com     
 **AI studio Coach:** Anshul Rehpade, Anshul.rehpade@breakthroughtech.org   
 **Program:** Break Through Tech AI Studio - Fall 2026  
 

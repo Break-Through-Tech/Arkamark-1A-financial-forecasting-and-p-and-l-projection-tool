@@ -42,7 +42,7 @@ This project offers an excellent opportunity to bridge financial domain expertis
 
 **Company / Org:** Arkamark  
 **Challenge Advisor:** Ram Kumar, kumar.k@arkamark.com     
-**AI studio Coach:** Anshul Rehpade, Anshul.rehpade@breakthroughtech.org   
+**AI studio Coach:** Anshul Rehpade, anshul.rehpade@breakthroughtech.org   
 **Program:** Break Through Tech AI Studio - Fall 2026  
 
 ---

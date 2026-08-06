@@ -85,7 +85,7 @@ Use these milestones to guide your work. Your team will create a GitHub Projects
 
 ## 📊 Dataset
 **Name and Source:** [TBD] 
-**Format:** Excel (.xlsx)
+**Format:** Excel (.xlsx)   
 **Size:** under 1gb  
 **Location:** [TBD]
 

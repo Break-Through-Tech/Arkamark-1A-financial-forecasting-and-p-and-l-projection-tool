@@ -20,6 +20,7 @@
 
 ## 📋 BTT Internal Evaluation Notes
 *(This section is for BTT staff and CAs only — remove before sharing with students)*
+*Recommended Libraries, Evaluation Metrics, and Resources to Get Started sections below were filled in by the AI Studio Coach Anshul on Ram Kumar's behalf, because the CA has not responded to two follow-up emails and a GitHub Issue as of this date. Dataset details and "How We'll Work Together" still require Ram's direct input and remain unresolved.*
 
 ### Technical Vetting
 | Check | Status | Notes |
@@ -100,9 +101,16 @@ Use these milestones to guide your work. Your team will create a GitHub Projects
 
 **Recommended Libraries:**
 - [e.g., pandas, scikit-learn, TensorFlow, Hugging Face]
+- pandas, numpy for data wrangling
+- statsmodels (SARIMA/ETS)
+- scikit-learn (regularized regression)
+- XGBoost or LightGBM (gradient-boosted trees)
+- matplotlib/seaborn for visualization
 
 **Evaluation Metrics:**
 - [e.g., Accuracy, Precision/Recall, RMSE, BLEU score]
+- MAPE, RMSE, MAE on a held-out backtest window
+- Benchmarked against a seasonal-naive baseline
 
 ---
 
@@ -113,14 +121,20 @@ The following resources will help your team understand the problem space and pot
 **Background Reading:**
 - [e.g., Link to an article or blog post about the problem domain]
 - [e.g., Link to an industry report or case study]
+- Financial Statement Analysis Principles (CFA Institute Guidelines)
+- Forecasting: Principles and Practice (Hyndman & Athanasopoulos) — free online
 
 **Technical Tutorials:**
 - [e.g., Link to a free tutorial on the ML technique(s) involved]
 - [e.g., Link to documentation for a key library or tool]
+- Statsmodels SARIMAX documentation
+- Scikit-learn Time Series Cross-Validation docs
 
 **Code Examples:**
 - [e.g., Link to a relevant GitHub repo]
 - [e.g., Link to a sample implementation or starter code]
+- Statsmodels SARIMAX implementation notebooks
+- XGBoost/LightGBM time-series regression tutorials
 
 **Other:**
 - [Links to any additional resources — e.g., papers, videos, podcasts, etc.]

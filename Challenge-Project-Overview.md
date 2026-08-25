@@ -13,6 +13,9 @@ Arkamark is a professional services firm specializing in advanced financial anal
 ---
 
 ## 🎯 The Challenge
+
+**Note:** The dataset originally planned for this project is still being finalized. See the Dataset section below for what you'll actually be working with this month — the modeling approach and goals below still apply.
+
 ### Project Summary
 In this project, you will use ten years of historical financial and operational data — monthly sales by product line, annual income statements and trial balances, and macroeconomic indicators such as oil prices and interest rates and time-series forecasting and regression techniques (e.g., SARIMA/ETS, gradient-boosted trees, and regularized regression) to build a model that forecasts product-line sales and projects a full income statement — including expected EBIT — for the next two fiscal years. This will help our company address the challenge of data-driven financial planning: anticipating revenue and profitability by product line under changing macroeconomic conditions, so leadership can budget, set realistic targets, and allocate resources with confidence.
 
@@ -44,22 +47,31 @@ Use these milestones to guide your work. Your team will create a GitHub Projects
 ---
 
 ## 📊 Dataset
-**Name and Source:** [TBD] 
-**Format:** Excel (.xlsx)   
-**Size:** under 1gb  
-**Location:** [TBD]
+**Name and Source:** Two public substitute datasets, while the original Arkamark historical financial data is finalized on the company's end:
+1. Corporación Favorita Store Sales (Kaggle) — for the sales-forecasting half of the project
+2. Financial Data of 4400+ Public Companies (Kaggle) — for the income-statement / EBIT half
+
+**Format:** CSV
+**Size:** under 1GB combined
+**Location:**
+- Sales data: https://www.kaggle.com/competitions/store-sales-time-series-forecasting
+- Financial statement data: https://www.kaggle.com/datasets/qks1lver/financial-data-of-4400-public-companies
 
 ### Key Details
-- [TBD]
+- While Arkamark's proprietary financial data is being finalized, these two datasets together let your team practice the full original project shape: forecast sales, then translate that forecast into a projected income statement.
+- **Dataset 1 (sales forecasting):** daily sales by store and product family (~33 categories, standing in for "product line") from Corporación Favorita, a large grocery retailer, across multiple years. Includes a daily oil-price series as a built-in macroeconomic driver, plus store metadata, holidays/events, and promotions.
+- **Dataset 2 (income statement / EBIT):** multi-year income statements, balance sheets, and cash flow statements for 4,400+ public companies — including revenue, cost of revenue, gross profit, operating expenses, and operating income (EBIT). Use this to study realistic margin structures (COGS %, opex %) and build the "sales forecast → P&L → EBIT" translation logic the original brief called for, independent of which specific company's sales you're forecasting.
+- **How to combine them:** forecast Favorita's sales as usual, then apply a margin structure derived from Dataset 2 (e.g., median COGS % and opex % for a comparable retail company) to convert that sales forecast into a simulated income statement with an EBIT line. This isn't a perfect substitute for Arkamark's actual financials, but it exercises the same modeling skill.
+- **Scope note:** neither dataset includes trial balances, so the trial-balance reconciliation piece of the original brief stays out of scope until real data arrives.
+- Want an interest-rate series to pair with the oil data? See [FRED](https://fred.stlouisfed.org) (Federal Reserve Economic Data).
   
 ---
 
 ## 🛠️ Suggested Approach
 
-**ML Problem Type:** Regression, NLP, Time Series Analysis, Deep Learning / Neural Networks, Large Language Models (LLMs) / Generative AI 
+**ML Problem Type:** Regression, NLP, Time Series Analysis, Deep Learning / Neural Networks, Large Language Models (LLMs) / Generative AI
 
 **Recommended Libraries:**
-- [e.g., pandas, scikit-learn, TensorFlow, Hugging Face]
 - pandas, numpy for data wrangling
 - statsmodels (SARIMA/ETS)
 - scikit-learn (regularized regression)
@@ -67,7 +79,6 @@ Use these milestones to guide your work. Your team will create a GitHub Projects
 - matplotlib/seaborn for visualization
 
 **Evaluation Metrics:**
-- [e.g., Accuracy, Precision/Recall, RMSE, BLEU score]
 - MAPE, RMSE, MAE on a held-out backtest window
 - Benchmarked against a seasonal-naive baseline
 
@@ -78,45 +89,35 @@ Use these milestones to guide your work. Your team will create a GitHub Projects
 The following resources will help your team understand the problem space and potential technical approaches for this project:
 
 **Background Reading:**
-- [e.g., Link to an article or blog post about the problem domain]
-- [e.g., Link to an industry report or case study]
 - Financial Statement Analysis Principles (CFA Institute Guidelines)
 - Forecasting: Principles and Practice (Hyndman & Athanasopoulos) — free online
 
 **Technical Tutorials:**
-- [e.g., Link to a free tutorial on the ML technique(s) involved]
-- [e.g., Link to documentation for a key library or tool]
 - Statsmodels SARIMAX documentation
 - Scikit-learn Time Series Cross-Validation docs
 
 **Code Examples:**
-- [e.g., Link to a relevant GitHub repo]
-- [e.g., Link to a sample implementation or starter code]
 - Statsmodels SARIMAX implementation notebooks
 - XGBoost/LightGBM time-series regression tutorials
 
 **Other:**
-- [Links to any additional resources — e.g., papers, videos, podcasts, etc.]
+- Kaggle "Store Sales - Time Series Forecasting" competition notebooks — real fellow-submitted solutions using this exact dataset, useful for seeing different modeling approaches
 
 *Feel free to explore beyond these, and share anything interesting you find with me!*
 
 ---
-
 ## 🤝 How We'll Work Together
 
 **Official check-ins:** During our biweekly 45-minute AI Studio Lab Section meeting block (2nd and 4th week of every month)
 
- **Other ways to reach out to me with questions:** 
-* [e.g., Your team's channel within Break Through Tech’s Discord space]
-* [e.g., Email; please copy your teammates and AI Studio Coach]
-* [e.g., Request a team check-in on Zoom]
-* [Note: I will aim to respond within 48 hours. Please reach out to your AI Studio Coach with urgent questions.]
-
-> 💡 **Challenge Advisor: Please update the above based on your availability and preference. If you are not able to answer questions or meet with fellows outside of the biweekly Lab Section check-ins, simply write in "N/A (only available during the official check-in times)"**
+**Other ways to reach out to me with questions:**
+* N/A (only available during the official check-in times)
+* While the Challenge Advisor's regular availability is being confirmed, please route project questions to your AI Studio Coach in the meantime.
+* I will aim to respond within 48 hours during official check-ins. Please reach out to your AI Studio Coach with urgent questions.
 
 **Recommended free coding / collaboration tools**
-* […]
-* […]
+* Google Colab — free cloud notebooks, no local setup needed
+* Jupyter — for local development if preferred
 
 ---
 

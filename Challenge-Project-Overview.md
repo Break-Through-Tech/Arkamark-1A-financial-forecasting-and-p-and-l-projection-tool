@@ -89,19 +89,20 @@ Use these milestones to guide your work. Your team will create a GitHub Projects
 The following resources will help your team understand the problem space and potential technical approaches for this project:
 
 **Background Reading:**
-- Financial Statement Analysis Principles (CFA Institute Guidelines)
-- Forecasting: Principles and Practice (Hyndman & Athanasopoulos) — free online
+- [Introduction to Financial Statement Analysis (CFA Institute)](https://www.cfainstitute.org/insights/professional-learning/refresher-readings/2026/introduction-financial-statement-analysis) — a free primer on reading an income statement, useful before working with the Dataset 2 financials.
+- [Forecasting: Principles and Practice (Hyndman & Athanasopoulos)](https://otexts.com/fpp3/) — the standard free textbook for time-series forecasting; covers SARIMA/ETS directly, the core method this project builds on.
+- [What Is a Good Retail Profit Margin? (NetSuite)](https://www.netsuite.com/portal/resource/articles/accounting/retail-profit-margins.shtml) — real-world COGS/opex/margin benchmarks by retail segment, useful when picking realistic assumptions to convert your sales forecast into a simulated P&L.
 
 **Technical Tutorials:**
-- Statsmodels SARIMAX documentation
-- Scikit-learn Time Series Cross-Validation docs
+- [Statsmodels SARIMAX documentation](https://www.statsmodels.org/stable/generated/statsmodels.tsa.statespace.sarimax.SARIMAX.html) — the official docs for building the classical time-series model.
+- [Scikit-learn TimeSeriesSplit (time series cross-validation)](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html) — how to backtest correctly without leaking future data into training, essential for the MAPE/RMSE backtest requirement.
 
 **Code Examples:**
-- Statsmodels SARIMAX implementation notebooks
-- XGBoost/LightGBM time-series regression tutorials
+- [Kaggle "Store Sales - Time Series Forecasting" competition notebooks](https://www.kaggle.com/competitions/store-sales-time-series-forecasting/code) — real submitted solutions using Dataset 1 (the Favorita sales data), useful for seeing different modeling approaches.
+- [Financial Data of 4400+ Public Companies (Kaggle dataset page)](https://www.kaggle.com/datasets/qks1lver/financial-data-of-4400-public-companies) — includes example notebooks showing how others have explored the income-statement dataset (Dataset 2).
 
 **Other:**
-- Kaggle "Store Sales - Time Series Forecasting" competition notebooks — real fellow-submitted solutions using this exact dataset, useful for seeing different modeling approaches
+- [XGBoost documentation — regression examples](https://xgboost.readthedocs.io/en/stable/python/examples/index.html) — official examples for the gradient-boosted-tree approach, for the ML-regression half of the modeling comparison.
 
 *Feel free to explore beyond these, and share anything interesting you find with me!*
 

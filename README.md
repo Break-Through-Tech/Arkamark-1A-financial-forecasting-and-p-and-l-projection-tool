@@ -10,7 +10,7 @@
 
 | Name             | GitHub Handle | Contribution                                                             |
 |------------------|---------------|--------------------------------------------------------------------------|
-| Saad Amin   | @taylornguyen | Data exploration, visualization, overall project coordination            |
+| Saad Amin   | @saadcoder28 |            |
 | Jordan Ramirez   | @jramirez     | Data collection, exploratory data analysis (EDA), dataset documentation  |
 | Amina Hassan     | @aminahassan  | Data preprocessing, feature engineering, data validation                 |
 | Priya Mehta      | @pmehta       | Model selection, hyperparameter tuning, model training and optimization  |

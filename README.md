@@ -11,10 +11,14 @@
 | Name             | GitHub Handle | Contribution                                                             |
 |------------------|---------------|--------------------------------------------------------------------------|
 | Saad Amin   | @saadcoder28 |            |
-| Jordan Ramirez   | @jramirez     | Data collection, exploratory data analysis (EDA), dataset documentation  |
-| Amina Hassan     | @aminahassan  | Data preprocessing, feature engineering, data validation                 |
-| Priya Mehta      | @pmehta       | Model selection, hyperparameter tuning, model training and optimization  |
-| Chris Park       | @chrispark    | Model evaluation, performance analysis, results interpretation           |
+| Sofia Alvazzi   | @sofiaal1     |   |
+| Ava Langanki   | @avalanganki     |     |
+| Samuel Tuffour | @samueltufffour  | |
+|       |     |  |
+|       |    |        |
+| Linh Dang       | @linhdangkhanh   | Model evaluation, performance analysis, results interpretation           |
+
+
 
 ---
 

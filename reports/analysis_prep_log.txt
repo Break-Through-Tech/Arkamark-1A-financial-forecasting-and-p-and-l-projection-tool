@@ -1,0 +1,90 @@
+Analysis prep - 2026-09-16 18:51
+==============================================================================
+MODELING LAYER. Decisions active on this run:
+  zero_revenue_to_na    : TRUE
+  impute_absent_as_zero : FALSE
+  min_nonzero_share     : 0.25
+  winsor_probs          : NULL (no winsorizing)
+  min_denominator       : 1e+06
+==============================================================================
+
+------------------------------------------------------------------------------
+annual
+------------------------------------------------------------------------------
+  panel in: 17511 rows, 18.3% unreported
+  DECISION 1: reinterpreted 983 total_revenue == 0 values as not reported
+  DECISION 2: dropped 1779 rows missing >=1 of 15 core aggregates
+              15732 rows remain, 0 values imputed
+  DECISION 3: skipped. Optional line items excluded, so nothing
+              is imputed anywhere in this table. Set
+              CFG$impute_absent_as_zero <- TRUE to include them.
+  DECISION 4: derived 8 ratios. NA counts:
+                gross_margin         401
+                operating_margin     401
+                net_margin           401
+                ocf_margin           401
+                current_ratio        135
+                debt_to_equity        82
+                asset_turnover        19
+                effective_tax       7034
+  DECISION 5: skipped. Outliers left intact. Set
+              CFG$winsor_probs <- c(0.01, 0.99) to clamp them.
+  VERIFIED: 0 nulls across 15 source columns
+  ERRORS CARRIED THROUGH (flags retained, rows not filtered):
+    flag_negative_revenue            21 rows
+    flag_negative_cogs                4 rows
+    flag_gp_exceeds_rev               3 rows
+    flag_gp_identity                 18 rows
+    flag_implausible_revenue        397 rows
+    flag_bs_identity               2051 rows
+    flag_negative_equity            859 rows
+    flag_period_gap                  37 rows
+    Filter these yourself if your analysis requires it.
+  wrote 15732 rows x 37 cols -> fin_analysis_annual.csv
+  balanced (4 periods): 15216 rows, 3804 tickers
+
+------------------------------------------------------------------------------
+quarterly
+------------------------------------------------------------------------------
+  panel in: 17651 rows, 19.4% unreported
+  DECISION 1: reinterpreted 1111 total_revenue == 0 values as not reported
+  DECISION 2: dropped 2224 rows missing >=1 of 15 core aggregates
+              15427 rows remain, 0 values imputed
+  DECISION 3: skipped. Optional line items excluded, so nothing
+              is imputed anywhere in this table. Set
+              CFG$impute_absent_as_zero <- TRUE to include them.
+  DECISION 4: derived 8 ratios. NA counts:
+                gross_margin         628
+                operating_margin     628
+                net_margin           628
+                ocf_margin           628
+                current_ratio        109
+                debt_to_equity        53
+                asset_turnover         2
+                effective_tax       8818
+  DECISION 5: skipped. Outliers left intact. Set
+              CFG$winsor_probs <- c(0.01, 0.99) to clamp them.
+  VERIFIED: 0 nulls across 15 source columns
+  ERRORS CARRIED THROUGH (flags retained, rows not filtered):
+    flag_negative_revenue            75 rows
+    flag_negative_cogs               30 rows
+    flag_gp_exceeds_rev              30 rows
+    flag_gp_identity                 10 rows
+    flag_implausible_revenue        622 rows
+    flag_bs_identity               1487 rows
+    flag_negative_equity            795 rows
+    flag_period_gap                  15 rows
+    Filter these yourself if your analysis requires it.
+  wrote 15427 rows x 37 cols -> fin_analysis_quarterly.csv
+  balanced (4 periods): 15212 rows, 3803 tickers
+
+==============================================================================
+SUMMARY
+==============================================================================
+fin_analysis_annual             15732 rows, 4019 tickers
+fin_analysis_annual_balanced    15216 rows
+fin_analysis_quarterly          15427 rows, 3906 tickers
+fin_analysis_quarterly_balanced 15212 rows
+
+Reproducibility: this output is a function of the CFG parameters
+logged at the top of this file. Change one and rerun to see the cost.

@@ -113,6 +113,46 @@ work. If the analysis needs a complete balance sheet on every row, switch it.
 late May. The script keeps the true `period_end` and adds a `calendar_aligned`
 flag rather than forcing everything onto December 31.
 
+## 10. Two kinds of null, and the model-ready extract
+
+The panels from script 02 are 19.7% null and **not one of their 17,511 rows is
+fully dense**. That makes them the right reference table and the wrong model
+input. Script 04 fixes it, and the reason it can is that "null" here means two
+unrelated things:
+
+**Not reported.** A gap in a core aggregate: `total_revenue`, `total_assets`,
+`net_income`, `total_stockholder_equity`. Every operating company has these, so
+a gap is missing information. Filling it with 0 would invent a company with no
+revenue. Rows missing any of the 14 core aggregates are dropped.
+
+**Not applicable.** A gap in a line item: `research_development`, `inventory`,
+`long_term_debt`, `dividends_paid`, `minority_interest`. A staffing firm carries
+no inventory. A debt-free company pays no interest. Here 0 is the true value
+rather than an estimate, and the gap describes the business model. 26 such
+columns are filled with 0.
+
+Treating the second class as missing data is what made the panel look unusable.
+Handled correctly:
+
+| Table | Rows | Tickers | Nulls in source columns |
+|---|---|---|---|
+| fin_model_annual | 15,732 | 4,019 | 0 |
+| fin_model_annual_balanced | 15,216 | 3,804 | 0 |
+| fin_model_quarterly | 15,427 | 3,906 | 0 |
+| fin_model_quarterly_balanced | 15,212 | 3,803 | 0 |
+
+40 source columns, 90% of rows retained.
+
+**The tradeoff, stated plainly:** this fills 168,102 cells, a median of 11 per
+row out of 26 eligible columns. That is a lot of inferred zeros, and the
+argument for each is structural rather than statistical. Every row carries
+`n_zero_filled` so you can see how much of it leaned on the rule, and you can
+filter to rows with few fills if a particular analysis needs it.
+
+Derived ratio columns can still be NA where a denominator fell under the $1M
+floor (401 rows for `gross_margin`). Those are computed conveniences, not
+source data, so they do not disqualify a row.
+
 ## Open decisions for the team
 
 1. **Do rows with `flag_bs_identity` belong in the benchmarking set?** 13% of

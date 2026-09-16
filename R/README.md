@@ -1,55 +1,63 @@
 # R pipeline
 
-Run from the repo root.
-
 ```r
 install.packages(c("readr","dplyr","tidyr","stringr","purrr","lubridate","janitor"))
 ```
 
 ```bash
-Rscript R/01_eda_financials.R    # -> reports/eda_financials.txt
-Rscript R/02_clean_financials.R  # -> data/clean/*.csv, reports/cleaning_log.txt
-Rscript R/03_clean_favorita.R    # -> data/clean/fav_*.csv  (needs data/favorita/)
+Rscript R/01_eda_financials.R    # profile the raw files
+Rscript R/02_clean_financials.R  # CLEANING   -> fin_*.csv, fin_panel_*.csv
+Rscript R/03_tidy_long.R         # RESHAPING  -> fin_long_*.csv, fin_coverage.csv
+Rscript R/04_analysis_prep.R     # MODELING   -> fin_analysis_*.csv
 ```
 
-Each script locates `00_config.R` from its own file path and resolves every
-other path against the repo root, so the working directory does not matter.
-Running from inside `R/`, from the repo root, or sourcing in RStudio all
-behave identically. On startup the config prints the repo root it resolved;
-if that line points somewhere unexpected, that is the thing to fix.
+Run from anywhere; each script finds `00_config.R` from its own path.
 
-| File | Purpose |
+## Three layers, and why the boundary matters
+
+| Layer | Script | Does | Never does |
+|---|---|---|---|
+| Cleaning | `02` | types, keys, validity, error flags | impute, drop columns, touch outliers |
+| Reshaping | `03` | wide to long | anything lossy |
+| Modeling | `04` | select, fill, derive, winsorize | hide that these are choices |
+
+A null in the script 02 output means "this company did not report this figure."
+That is a fact about the data, not a defect. Filling it is an interpretation, so
+interpretation lives in script 04 where it is parameterized in `MODEL` and
+logged on every run.
+
+Putting a modeling choice inside a file called "clean" hides it from everyone
+downstream. That is the one rule in this pipeline.
+
+## Which file do I use?
+
+| You want to | Use |
 |---|---|
-| `00_config.R` | Paths, packages, cleaning parameters (`CFG`), helpers. Every tunable decision lives here. |
-| `01_eda_financials.R` | Profiles the six raw files. Run before and after any upstream change. |
-| `02_clean_financials.R` | Cleans all six files, builds the joined annual and quarterly panels. |
-| `03_clean_favorita.R` | Cleans the Favorita files. Degrades gracefully if `train.csv` is absent. |
+| Fit a model or compute ratios | `fin_analysis_annual.csv` |
+| Compare companies over equal periods | `fin_analysis_annual_balanced.csv` |
+| Group or aggregate without deciding what absence means | `fin_long_annual.csv` |
+| See reporting rates per line item | `fin_coverage.csv` |
+| Audit a value or check a flag | `fin_panel_annual.csv` |
 
-Findings that drove the cleaning rules are written up in
-[`reports/eda_findings.md`](../reports/eda_findings.md).
+## The default path imputes nothing
 
-## Design choices worth knowing
+`fin_analysis_annual.csv` is **15,732 rows, 15 columns, zero nulls, zero imputed
+values.** Density comes from selecting the 15 aggregates every operating company
+reports, then keeping complete rows. It does not come from filling gaps.
 
-**Flag, do not delete.** Rows that fail an accounting identity get
-`flag_bs_identity` or `flag_gp_identity` and stay in the data. A forecasting
-model needs to know which records are suspect; it does not need them silently
-removed by someone else's judgment call.
+An earlier version filled 168,102 cells with zero to reach the same 15,732 rows.
+Those fills bought no additional rows. They only carried 26 optional line items
+that a P&L projection does not use. `MODEL$impute_absent_as_zero` is `FALSE`;
+set it to `TRUE` if you need those columns and the log will price it for you.
 
-**Sparse columns are reported, not dropped.** `CFG$drop_sparse` is `FALSE` by
-default. `researchDevelopment` being 66% missing is information about which
-companies do R&D, not noise.
+## Two limitations no script can fix
 
-**Order of operations matters.** Empty-row removal runs before deduplication,
-so a zero-filled stub is discarded as an empty row rather than competing with
-the real record for the key.
+**Four periods per company, maximum.** Annual gives 4 fiscal years, quarterly
+gives 4 quarters. Not enough for a per-company two-year forecast.
 
-**Ratios are guarded.** `safe_ratio()` returns NA when the denominator is under
-`CFG$min_denominator` ($1M). Winsorized `*_w` variants exist alongside the raw
-ones.
+**No sector, industry, SIC or country column exists in this source.**
+Benchmarking an IT services firm against an undifferentiated pool of 4,422
+banks, REITs, biotechs and retailers is not a benchmark. A ticker-to-sector
+mapping has to be acquired separately before that use case is valid.
 
-## Open question for the team
-
-Neither file gives more than 4 periods per company. Before building a two-year
-forecast, decide whether this data can support one at all, or whether
-cross-sectional benchmarking is the honest framing until real Arkamark history
-arrives. See `reports/eda_findings.md`.
+Both are documented in [`reports/cleaning_decisions.md`](../reports/cleaning_decisions.md).

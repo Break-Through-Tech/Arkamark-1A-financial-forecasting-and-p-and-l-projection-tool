@@ -52,7 +52,15 @@ logline("  min_nonzero_share     : ", CFG$min_nonzero_share)
 logline("  winsor_probs          : ",
         if (is.null(CFG$winsor_probs)) "NULL (no winsorizing)"
         else paste(CFG$winsor_probs, collapse = ", "))
-logline("  min_denominator       : ", format(CFG$min_denominator, big.mark = ","))
+fmt_cfg <- function(x) format(x, big.mark = ",", scientific = FALSE, trim = TRUE)
+logline("  min_denominator       : ", fmt_cfg(CFG$min_denominator),
+        "  (balance-sheet ratios)")
+logline("  min_revenue_denom     : ", fmt_cfg(CFG$min_revenue_denom),
+        "  (margins)")
+logline("  min_pretax_income     : ", fmt_cfg(CFG$min_pretax_income),
+        "  (effective tax rate)")
+logline("  tax_rate_bounds       : ",
+        paste(CFG$tax_rate_bounds, collapse = " to "))
 logline(strrep("=", 78))
 
 # ---------------------------------------------------------------------------
@@ -203,12 +211,21 @@ build <- function(freq) {
   # --- DECISION 4: derived ratios -----------------------------------------
   # Guarded denominators. NA here means "denominator too small to yield a
   # meaningful percentage", which is different from a missing input.
+  #
+  # TWO floors, deliberately. Margins divide by revenue and use
+  # CFG$min_revenue_denom ($10M). Balance-sheet ratios divide by liabilities,
+  # equity or assets and keep CFG$min_denominator ($1M), because a small
+  # balance sheet is normal and blanking those would cost real observations.
   out <- out |>
     mutate(
-      gross_margin     = safe_ratio(gross_profit, total_revenue),
-      operating_margin = safe_ratio(operating_income, total_revenue),
-      net_margin       = safe_ratio(net_income, total_revenue),
-      ocf_margin       = safe_ratio(total_cash_from_operating_activities, total_revenue),
+      gross_margin     = safe_ratio(gross_profit, total_revenue,
+                                    CFG$min_revenue_denom),
+      operating_margin = safe_ratio(operating_income, total_revenue,
+                                    CFG$min_revenue_denom),
+      net_margin       = safe_ratio(net_income, total_revenue,
+                                    CFG$min_revenue_denom),
+      ocf_margin       = safe_ratio(total_cash_from_operating_activities,
+                                    total_revenue, CFG$min_revenue_denom),
       current_ratio    = safe_ratio(total_current_assets, total_current_liabilities),
       debt_to_equity   = safe_ratio(total_liab, total_stockholder_equity),
       asset_turnover   = safe_ratio(total_revenue, total_assets),
@@ -220,7 +237,36 @@ build <- function(freq) {
                     NA_real_, income_tax_expense / income_before_tax)
         ifelse(!is.na(r) & (r < CFG$tax_rate_bounds[1] |
                             r > CFG$tax_rate_bounds[2]), NA_real_, r)
-      }
+      },
+
+      # A revenue floor cannot fix a company whose P&L is an order of
+      # magnitude larger than its revenue line. Two different situations
+      # produce this, and both make a margin meaningless:
+      #
+      #   1. Holding companies. LBRDA and LBRDK are Liberty Broadband,
+      #      GLIBA is GCI Liberty. Income comes from equity-method stakes,
+      #      not operations. LBRDA 2017: $13.1M revenue, $2.03B net income,
+      #      net margin 155.3. It clears any plausible revenue floor,
+      #      because $13.1M is a perfectly normal amount of revenue.
+      #
+      #   2. Loss-making small caps, mostly development-stage biotech,
+      #      burning many times their revenue. Same arithmetic, opposite
+      #      sign.
+      #
+      # Both are correct filings. Neither is comparable on margin. The test
+      # is symmetric because the problem is one of scale, not of sign.
+      #
+      # TRUE on 861 annual rows (5.5%). Marked, never removed: exclude with
+      # !margin_unreliable before any margin benchmark, and say in the
+      # write-up that you did.
+      #
+      # Measured effect of the floor plus this exclusion, annual net margin:
+      #   before        min -257.66   p1 -16.06   median 0.049   max 155.34
+      #   after         min   -4.98   p1  -2.46   median 0.055   max   4.83
+      # The median barely moves, which is the evidence that this removes
+      # noise rather than signal.
+      margin_unreliable = !is.na(net_income) & !is.na(total_revenue) &
+                          abs(net_income) > 5 * abs(total_revenue)
     )
 
   ratios <- c("gross_margin", "operating_margin", "net_margin", "ocf_margin",
@@ -230,6 +276,15 @@ build <- function(freq) {
   for (r in ratios) {
     logline("                ", sprintf("%-18s %5d", r, sum(is.na(out[[r]]))))
   }
+  logline("              margin floor CFG$min_revenue_denom = ",
+          format(CFG$min_revenue_denom, big.mark = ",", scientific = FALSE),
+          "; balance-sheet floor CFG$min_denominator = ",
+          format(CFG$min_denominator, big.mark = ",", scientific = FALSE))
+  logline("  DECISION 4b: margin_unreliable TRUE on ",
+          sum(out$margin_unreliable),
+          " rows (|net income| > 5x revenue). Marked, not removed.")
+  logline("              Holding companies and loss-making small caps.")
+  logline("              Exclude with !margin_unreliable before benchmarking.")
 
   # --- DECISION 5: winsorizing, off by default ----------------------------
   if (!is.null(CFG$winsor_probs)) {

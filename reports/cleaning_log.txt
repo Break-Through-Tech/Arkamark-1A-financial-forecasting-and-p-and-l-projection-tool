@@ -1,0 +1,134 @@
+Arkamark 1A cleaning log - 2026-09-22 18:40
+CLEANING LAYER: no imputation, no column dropping, no outlier treatment.
+==============================================================================
+
+------------------------------------------------------------------------------
+incomeStatementHistory_annually.csv
+------------------------------------------------------------------------------
+  read 17511 rows x 20 cols
+  error and condition flags raised:
+    flag_period_gap                  49
+    flag_negative_revenue            23
+    flag_negative_cogs                4
+    flag_gp_exceeds_rev               3
+    flag_gp_identity                 20
+    flag_implausible_revenue        417
+    flag_zero_revenue               983
+  columns over 50% unreported (RETAINED, see script 04):
+    discontinued_operations                 91.2%
+    other_operating_expenses                70.1%
+    minority_interest                       68.9%
+    research_development                    66.3%
+  wrote 17511 rows x 37 cols
+
+------------------------------------------------------------------------------
+incomeStatementHistory_quarterly.csv
+------------------------------------------------------------------------------
+  read 17657 rows x 20 cols
+  [income/quarterly] removed 3 records with no financial data at all
+  [income/quarterly] resolved 6 duplicate keys
+  error and condition flags raised:
+    flag_period_gap                  59
+    flag_negative_revenue            77
+    flag_negative_cogs               37
+    flag_gp_exceeds_rev              37
+    flag_gp_identity                 12
+    flag_implausible_revenue        731
+    flag_zero_revenue              1111
+  columns over 50% unreported (RETAINED, see script 04):
+    discontinued_operations                 94.6%
+    other_operating_expenses                72.1%
+    minority_interest                       69.3%
+    research_development                    68.4%
+  wrote 17648 rows x 37 cols
+
+------------------------------------------------------------------------------
+balanceSheetHistory_annually.csv
+------------------------------------------------------------------------------
+  read 17511 rows x 31 cols
+  [balance/annual] removed 153 records with no financial data at all
+  error and condition flags raised:
+    flag_period_gap                  43
+    flag_bs_identity               2361
+    flag_negative_equity            968
+  columns over 50% unreported (RETAINED, see script 04):
+    deferred_long_term_liab                 84.8%
+    short_term_investments                  77.8%
+    minority_interest                       74.6%
+    short_long_term_debt                    68.7%
+    deferred_long_term_asset_charges        65.1%
+    long_term_investments                   56.8%
+  wrote 17358 rows x 46 cols
+
+------------------------------------------------------------------------------
+balanceSheetHistory_quarterly.csv
+------------------------------------------------------------------------------
+  read 17657 rows x 31 cols
+  [balance/quarterly] removed 174 records with no financial data at all
+  [balance/quarterly] resolved 2 duplicate keys
+  error and condition flags raised:
+    flag_period_gap                  43
+    flag_bs_identity               1658
+    flag_negative_equity            869
+  columns over 50% unreported (RETAINED, see script 04):
+    deferred_long_term_liab                 83.6%
+    short_term_investments                  74.3%
+    minority_interest                       70.9%
+    deferred_long_term_asset_charges        69.3%
+    short_long_term_debt                    63.0%
+    long_term_investments                   55.3%
+  wrote 17481 rows x 46 cols
+
+------------------------------------------------------------------------------
+cashflowStatement_annually.csv
+------------------------------------------------------------------------------
+  read 17511 rows x 22 cols
+  [cashflow/annual] removed 1 records with no financial data at all
+  error and condition flags raised:
+    flag_period_gap                  49
+  columns over 50% unreported (RETAINED, see script 04):
+    effect_of_exchange_rate                 55.1%
+    other_cashflows_from_investing_activities  53.9%
+    dividends_paid                          52.1%
+    change_to_inventory                     51.5%
+  wrote 17510 rows x 33 cols
+
+------------------------------------------------------------------------------
+cashflowStatement_quarterly.csv
+------------------------------------------------------------------------------
+  read 17657 rows x 22 cols
+  [cashflow/quarterly] removed 12 records with no financial data at all
+  [cashflow/quarterly] resolved 6 duplicate keys
+  error and condition flags raised:
+    flag_period_gap                  61
+  columns over 50% unreported (RETAINED, see script 04):
+    other_cashflows_from_investing_activities  63.1%
+    change_to_inventory                     56.9%
+    effect_of_exchange_rate                 56.7%
+    dividends_paid                          56.4%
+    investments                             56.4%
+    issuance_of_stock                       50.9%
+  wrote 17639 rows x 33 cols
+
+panel annual: 17511 rows x 88 cols, 18.3% unreported
+
+panel quarterly: 17651 rows x 88 cols, 19.4% unreported
+
+==============================================================================
+SUMMARY
+==============================================================================
+annual:    17511 rows, 4422 tickers
+quarterly: 17651 rows, 4420 tickers
+
+Nulls in these files are unreported figures, faithfully preserved.
+For a dense modeling table see script 04, which makes the filling
+and selection decisions explicitly and logs each one.
+
+TWO LIMITATIONS NO SCRIPT CAN FIX:
+1. No ticker has more than 4 periods. Annual gives 4 fiscal years;
+   quarterly gives 4 quarters, i.e. one year. This does not support
+   a two-year per-company forecast.
+2. There is no sector, industry, SIC or country column in this source.
+   Benchmarking an IT services firm against an undifferentiated pool
+   of 4,422 banks, REITs, biotechs and retailers is not a benchmark.
+   A ticker-to-sector mapping has to be acquired separately.

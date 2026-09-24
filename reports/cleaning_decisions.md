@@ -1,179 +1,333 @@
-# Cleaning decisions: financial statement data
+# Cleaning decisions
 
-For the Arkamark 1A team. This documents what `R/02_clean_financials.R` does to
-the raw files and why, so that nobody has to reverse engineer it from the code
-or wonder where 153 rows went.
+**Status:** draft, unsigned. Every row in the register below needs an owner and
+a date before this document is worth anything.
 
-Evidence for each decision is in [`eda_findings.md`](eda_findings.md). A record
-of what each run actually changed is in `cleaning_log.txt`, regenerated every
-time the script runs.
+This file records **judgment calls**: choices where a reasonable person could
+have decided otherwise, and where the choice changes downstream results. It is
+written and maintained by people.
 
-## Inputs and outputs
+Measured facts about the data do not belong here. They live in
+[`data_dictionary.md`](data_dictionary.md), which is emitted by
+`R/05_data_dictionary.R` and regenerates on every run. The split is deliberate:
+the part that goes stale is automated, the part that needs a human owner stays
+with a human owner.
 
-| Input | Rows in | Rows out | Removed |
+---
+
+## Provenance, before anything else
+
+This pipeline does not process Arkamark data. Arkamark has provided none. The
+six source CSVs are a public Kaggle dataset of filed statements for roughly
+4,400 listed companies, used as a substitute while Arkamark's own data is
+finalised.
+
+The data is real, not synthetic. `ACN` is Accenture, `AZO` is AutoZone. So any
+finding here is a true statement about those companies and says nothing about
+Arkamark without an explicit comparability argument.
+
+State this on every chart, slide and README built from these outputs.
+
+---
+
+## How to read this file
+
+Each decision has a number, the parameter that implements it, what we chose,
+what we rejected, and the evidence. If you disagree with one, change the row,
+put your name on it, and note the date. Do not silently change the code.
+
+A decision with `TBD` in the owner column has not actually been made. It has
+been inherited.
+
+---
+
+## Decision register
+
+| # | Decision | Setting | Owner | Date |
+|---|---|---|---|---|
+| 1 | Layer boundary: cleaning never imputes | architectural | TBD | TBD |
+| 2 | Keep sparse columns | `drop_sparse = FALSE` | TBD | TBD |
+| 3 | Drop wholly empty rows | `drop_empty_rows = TRUE` | TBD | TBD |
+| 4 | Flag errors, do not delete them | architectural | TBD | TBD |
+| 5 | Identity tolerance | `identity_tol = 0.001` | TBD | TBD |
+| 6 | Treat zero revenue as missing, in modeling only | `zero_revenue_to_na = TRUE` | TBD | TBD |
+| 7 | Do not fill absent line items with zero | `impute_absent_as_zero = FALSE` | TBD | TBD |
+| 8 | Two ratio floors: margins vs balance sheet | `min_revenue_denom = 1e7`, `min_denominator = 1e6` | TBD | TBD |
+| 9 | Guard the effective tax rate harder | `min_pretax_income = 1e7` | TBD | TBD |
+| 10 | No winsorizing by default | `winsor_probs = NULL` | TBD | TBD |
+| 11 | Balance sheet and cash flow are out of scope | scope | TBD | TBD |
+| 12 | Mark rows whose P&L dwarfs their revenue | `margin_unreliable` | TBD | TBD |
+
+---
+
+## 1. Cleaning never imputes
+
+**Chosen:** three layers. Script 02 fixes types, keys, validity and flags
+errors. Script 03 reshapes. Script 04 selects, fills and derives.
+
+**Rejected:** one `clean.R` that does everything.
+
+**Why:** a null coming out of script 02 means "this company did not report this
+figure." That is a fact about the filing, not a defect in the data. Filling it
+is an interpretation, and an interpretation buried inside a file called "clean"
+is invisible to everyone downstream who then treats the output as ground truth.
+
+**Consequence to expect:** the script 02 outputs look alarming. In
+`fin_panel_annual.csv`, 100% of rows carry at least one null. That is the design
+working, not failing. Anyone fitting a model against a script 02 output is using
+the wrong file.
+
+---
+
+## 2. Keep sparse columns
+
+**Chosen:** no column is dropped for sparsity at any setting.
+
+**Rejected:** dropping columns above a missingness threshold, typically 60%.
+
+**Why:** in financial statements, missingness is almost never random. A blank
+`research_development` means the company does not report R&D, not that the
+figure is unknown. Dropping the column throws away the information that a whole
+class of companies reports nothing there.
+
+**Note the interaction:** if you ever add a sparsity drop, it must run *before*
+any structural-zero fill. Filling first pushes every such column to 0% missing
+and the drop silently finds nothing. A parallel Python implementation hit
+exactly this bug and shipped a 91%-missing column into its output.
+
+---
+
+## 3. Drop wholly empty rows
+
+**Chosen:** drop rows where every financial measure is 0 or NA. 343 rows.
+
+**Rejected:** keeping them.
+
+**Why:** a row with no measures is not an observation of a company-period, it is
+an empty record. Note that `row_information()` deliberately excludes identifier
+and derived-calendar columns, because counting `fiscal_year` as information is
+what defeated an earlier version of this check.
+
+---
+
+## 4. Flag errors, do not delete them
+
+**Chosen:** demonstrable errors get a `flag_*` column and stay in the file.
+Negative revenue, negative COGS, gross profit exceeding revenue, failed balance
+identity, implausibly small revenue, wrong period gap.
+
+**Rejected:** deleting error rows during cleaning.
+
+**Why:** deletion is irreversible and invisible. A flag lets each downstream use
+decide. For benchmarking, filter with
+`!flag_negative_revenue, !flag_implausible_revenue, !flag_gp_exceeds_rev`,
+which drops 421 rows.
+
+**Open item:** nobody has yet looked at *which* companies are flagged. If the
+flags cluster in one sector, that is a finding worth a slide.
+
+---
+
+## 5. Identity tolerance of 0.1%
+
+**Chosen:** `identity_tol = 0.001`, relative.
+
+**Why:** filings round. An exact-equality test fails on rounding and tells you
+nothing.
+
+**What the identities actually show** (measured on the raw annual income
+statement, 1% tolerance, 17,511 rows):
+
+| Identity | Holds |
+|---|---|
+| `gross_profit = total_revenue - cost_of_revenue` | 99.9% |
+| `operating_income = total_revenue - total_operating_expenses` | 100% |
+| `operating_income = ebit` | 88.7% |
+| `income_before_tax = ebit + total_other_income_expense_net` | 88.0% |
+| `net_income = income_before_tax - income_tax_expense` | 86.3% |
+| `total_operating_expenses = cost_of_revenue + SG&A + R&D` | **49.0%** |
+
+**This is the most important table in the document, and it has consequences:**
+
+- `operating_income` and `ebit` are **not the same field** despite the challenge
+  brief naming EBIT as the target. Pick one, state which, defend it.
+- Operating expenses **do not decompose** into COGS, SG&A and R&D on half the
+  rows. A P&L engine built on that assumption will silently lose money. Carry
+  the residual as an explicit `other_opex` line so the statement always ties.
+
+**Open item:** no `05_audit_identities.R` exists yet. These numbers were
+produced ad hoc and should be reproducible on every run.
+
+---
+
+## 6. Zero revenue becomes missing, in the modeling layer only
+
+**Chosen:** script 02 only flags it. Script 04 converts it, with
+`zero_revenue_to_na = TRUE`.
+
+**Why:** revenue recorded as exactly 0 is a "not reported" placeholder in this
+source, 983 annual rows and 1,111 quarterly. A listed company with genuinely
+zero revenue is implausible. But calling 0 a placeholder is an interpretation,
+so it happens in the layer where interpretations live and get logged.
+
+---
+
+## 7. Do not fill absent line items with zero
+
+**Chosen:** `impute_absent_as_zero = FALSE`.
+
+**Rejected:** filling to make the modeling table dense.
+
+**Why:** an earlier version filled 168,102 cells with zero and gained **no
+additional rows**. Density came from selecting the aggregates every operating
+company reports, then keeping complete rows, not from filling gaps. The fills
+only carried optional line items a P&L projection does not use.
+
+**If you need those columns**, set the flag to `TRUE` and read the log, which
+prices the change. Do not fill by hand.
+
+---
+
+## 8. Two ratio floors, not one
+
+**Chosen:** margins divide by revenue and use `min_revenue_denom = 1e7`.
+Balance-sheet ratios divide by liabilities, equity or assets and keep
+`min_denominator = 1e6`.
+
+**Rejected:** a single global floor.
+
+**Why two:** at $1M the annual modeling table produced a gross margin of
+**-112.30** and a net margin of **-257.66**, because 1,236 rows sit between $1M
+and $10M of revenue where a margin is arithmetic noise. But raising the global
+floor to $10M would also blank `current_ratio` and `debt_to_equity` for every
+company with a small balance sheet, which costs real observations and solves
+nothing. A small balance sheet is normal. A tiny revenue line under a large P&L
+is not.
+
+**Measured effect on annual net margin:**
+
+| | min | p1 | median | max |
+|---|---:|---:|---:|---:|
+| Before | -257.66 | -16.06 | 0.049 | 155.34 |
+| Floor only | -23.17 | -3.85 | 0.055 | 155.34 |
+| Floor + `!margin_unreliable` | **-4.98** | **-2.46** | **0.055** | **4.83** |
+
+The median barely moves. That is the evidence this removes noise rather than
+signal. No rows are dropped; ~1,236 rows get blank margins instead of nonsense
+ones, and their raw figures are retained.
+
+**Still true:** a blank ratio is a refusal to divide, not a missing input. Every
+input to a blank margin is present in the same row.
+
+---
+
+## 9. Effective tax rate floored at $10M pretax
+
+**Chosen:** `min_pretax_income = 1e7`, bounds `c(-0.5, 1.0)`.
+
+**Why:** effective tax rate is tax expense over pretax income. Roughly half
+these companies have negative or near-zero pretax income, where the ratio is
+meaningless or wildly signed.
+
+**Consequence, and read this before anyone panics:** `effective_tax` is blank on
+**7,034 of 15,732 rows, 44.7%**. That single column is 79% of every blank in the
+file. It is the main reason the modeling table looks full of holes when it is
+not. 29 of its 37 columns have zero nulls.
+
+**Open item:** $10M is a high floor and it was inherited, not argued. Someone
+should either defend it or lower it. Either way, put a name on it.
+
+---
+
+## 10. No winsorizing by default
+
+**Chosen:** `winsor_probs = NULL`.
+
+**Why:** clipping outliers changes reported results and should be a visible,
+deliberate act. Set it to `c(0.01, 0.99)` when a specific analysis needs it and
+the log will record that the run was winsorized.
+
+**Counterpoint worth taking seriously:** raw operating margin in this source
+runs to -28,077. Any median is safe, but any mean is not. If someone reports a
+mean anywhere, this decision has to be revisited.
+
+---
+
+## 11. Balance sheet and cash flow are out of scope
+
+**Chosen:** clean them, do not invest further in them.
+
+**Why:** the challenge brief lists balance sheet and cash flow projection as a
+stretch goal. The primary deliverable is a two-year sales forecast and a
+projected P&L. Deep work on the other two statements before the P&L ships
+spends weeks the schedule does not have.
+
+**This is a scope decision, not a technical one, and it needs the loudest
+signature on this page.**
+
+---
+
+## 12. Mark rows whose P&L dwarfs their revenue
+
+**Chosen:** a `margin_unreliable` column, TRUE when
+`|net_income| > 5 x |total_revenue|`. 861 annual rows, 5.5%. Marked, never
+removed.
+
+**Why a revenue floor is not enough:** two situations clear any plausible floor
+and still produce a meaningless margin.
+
+1. **Holding companies.** `LBRDA` and `LBRDK` are Liberty Broadband, `GLIBA` is
+   GCI Liberty. Their income comes from equity-method stakes, not operations.
+   LBRDA 2017 filed $13.1M of revenue against $2.03B of net income, a net
+   margin of 155.3. $13.1M is a perfectly normal amount of revenue, so no
+   floor catches it.
+2. **Loss-making small caps**, mostly development-stage biotech, burning many
+   times their revenue. Same arithmetic, opposite sign.
+
+Both are correct filings. The test is symmetric because the problem is scale,
+not sign.
+
+**How to use it:** `filter(!margin_unreliable)` before any margin benchmark,
+and say in the write-up that you did. Excluding 5.5% of observations is a
+methodological choice a reader is entitled to know about.
+
+**Open item:** the 5x threshold is a round number chosen because it cleanly
+separates the two clusters. Nobody has tested 3x or 10x. If a reviewer asks why
+5, there is currently no answer.
+
+---
+
+## Open questions the pipeline cannot resolve
+
+**No sector, industry, SIC or country column exists in this source.** The brief
+asks for margin structures relevant to a professional services firm.
+Benchmarking one against an undifferentiated pool of 4,400 banks, REITs,
+biotechs and retailers is not a benchmark. Either acquire a ticker-to-sector
+mapping, or hand-pick comparables by ticker and document the list. `ACN` and
+`VRTU` are in the data.
+
+**Maximum four periods per company.** Annual gives four fiscal years,
+2016 to 2019. Quarterly gives four quarters, almost all inside 2019, so the
+quarterly files are a one-year snapshot rather than a time series. Neither
+supports a per-company two-year forecast. The brief's reference to "ten years of
+historical" does not match what was supplied.
+
+Both have been raised with the Challenge Advisor. Record the date sent and any
+reply here.
+
+| Question | Raised on | Reply | Assumption we proceed on |
 |---|---|---|---|
-| incomeStatementHistory_annually | 17,511 | 17,511 | 0 |
-| incomeStatementHistory_quarterly | 17,657 | 17,648 | 3 empty, 6 duplicate |
-| balanceSheetHistory_annually | 17,511 | 17,358 | 153 empty |
-| balanceSheetHistory_quarterly | 17,657 | 17,481 | 174 empty, 2 duplicate |
-| cashflowStatement_annually | 17,511 | 17,510 | 1 empty |
-| cashflowStatement_quarterly | 17,657 | 17,639 | 12 empty, 6 duplicate |
+| Sector mapping source | TBD | none | TBD |
+| Four periods vs ten years | TBD | none | TBD |
 
-Joined panels: `fin_panel_annual.csv` (17,511 x 93, 4,422 tickers) and
-`fin_panel_quarterly.csv` (17,651 x 93, 4,420 tickers).
+An unanswered question is not a blocker. It is an assumption, and assumptions
+are a graded deliverable.
 
-## Decisions
+---
 
-### 1. Blank placeholder rows are deleted
+## Changelog
 
-343 rows across the six files had every financial field at 0 or NA. These are
-not companies with no assets, they are empty records. Deleting them is the only
-decision in this pipeline that removes data outright.
-
-Rejected alternative: keeping them and filtering downstream. Every person who
-touched the data would have had to rediscover the problem.
-
-### 2. Duplicate keys are resolved by keeping the more populated row
-
-The quarterly files contained 14 duplicate `(ticker, period_end)` pairs. Some
-were byte-identical. Others paired a real record with a zero-filled stub, for
-example BOX on 2019-10-31 and LHX on 2019-09-27. The script keeps whichever row
-has more populated fields, which handles both cases without a special case for
-each ticker.
-
-### 3. `totalRevenue == 0` becomes NA
-
-983 annual and 1,111 quarterly income rows reported exactly zero revenue. A
-public company with genuinely zero revenue is rare enough that these are almost
-certainly unreported. Left as zero they produce division-by-zero margins that
-silently propagate.
-
-Consequence: those rows have no margin figures at all. 16,106 of 17,511 annual
-rows carry a usable gross margin. The gap is deliberate and visible rather than
-filled with a fake 0%.
-
-### 4. Sparse columns are reported, never dropped
-
-Nine columns exceed 65% missing. None are removed. `CFG$drop_sparse` is `FALSE`
-and should probably stay that way.
-
-The reason is that missingness here is structural, not random.
-`research_development` is 66% missing because most of these companies do not do
-R&D, and `inventory` is 45% missing because service companies carry none. That
-absence describes the business model, which is precisely what a staffing and IT
-services comparison needs. Dropping the column throws away the signal.
-
-### 5. Accounting failures are flagged, not fixed or deleted
-
-- `flag_gp_identity`: 20 annual rows where revenue minus cost of revenue does
-  not equal gross profit. The income statement is essentially clean.
-- `flag_bs_identity`: 2,361 annual and 1,658 quarterly rows where assets do not
-  equal liabilities plus equity plus minority interest, at 0.1% tolerance.
-
-Note on the second: minority interest sits outside `total_stockholder_equity`
-in this source. Including it drops annual failures from 5,546 to 2,361. The
-remaining 2,361 are genuine source errors.
-
-These rows stay in the data. A model needs to know which records are suspect;
-it does not need them removed by someone else's judgment.
-
-### 6. Sign conventions get explicit magnitude columns
-
-`interest_expense`, `capital_expenditures`, `dividends_paid` and
-`repurchase_of_stock` are all stored as negatives. The originals are untouched
-and `*_abs` copies are added, so a P&L build-up cannot accidentally add where it
-meant to subtract.
-
-### 7. Ratios are guarded, and two guards are different
-
-Margins require revenue above $1M before a ratio is computed, and winsorized
-`*_w` variants are provided alongside the raw ones. Without the floor, gross
-margin ranged from -3,578 to +7.7.
-
-Effective tax rate needed a stricter rule. Pre-tax income is far smaller than
-revenue and crosses zero constantly, so the $1M floor let through a rate of
-1,383 annual and -4,925 quarterly. It now requires pre-tax income above $10M
-and clamps to [-0.5, 1.0]. The result has a median of 0.213 annual and 0.200
-quarterly, which lands on the 21% US statutory rate. Coverage falls from 17,093
-rows to 9,143, which is the price of the column meaning what it says.
-
-### 8. Statements are joined with a full join
-
-The panel keeps an income row even when its balance sheet record was a blank
-placeholder, filling the balance fields with NA. This is why the annual panel is
-17,511 rows while the annual balance file is 17,358.
-
-This is a choice worth revisiting. An inner join would drop those rows entirely.
-Full join keeps the revenue data and loses only the assets, which suits margin
-work. If the analysis needs a complete balance sheet on every row, switch it.
-
-### 9. Off-calendar fiscal years are preserved
-
-13,802 of 17,511 annual rows end in December, but EDU ends in May and DRI in
-late May. The script keeps the true `period_end` and adds a `calendar_aligned`
-flag rather than forcing everything onto December 31.
-
-## 10. Two kinds of null, and the model-ready extract
-
-The panels from script 02 are 19.7% null and **not one of their 17,511 rows is
-fully dense**. That makes them the right reference table and the wrong model
-input. Script 04 fixes it, and the reason it can is that "null" here means two
-unrelated things:
-
-**Not reported.** A gap in a core aggregate: `total_revenue`, `total_assets`,
-`net_income`, `total_stockholder_equity`. Every operating company has these, so
-a gap is missing information. Filling it with 0 would invent a company with no
-revenue. Rows missing any of the 14 core aggregates are dropped.
-
-**Not applicable.** A gap in a line item: `research_development`, `inventory`,
-`long_term_debt`, `dividends_paid`, `minority_interest`. A staffing firm carries
-no inventory. A debt-free company pays no interest. Here 0 is the true value
-rather than an estimate, and the gap describes the business model. 26 such
-columns are filled with 0.
-
-Treating the second class as missing data is what made the panel look unusable.
-Handled correctly:
-
-| Table | Rows | Tickers | Nulls in source columns |
-|---|---|---|---|
-| fin_model_annual | 15,732 | 4,019 | 0 |
-| fin_model_annual_balanced | 15,216 | 3,804 | 0 |
-| fin_model_quarterly | 15,427 | 3,906 | 0 |
-| fin_model_quarterly_balanced | 15,212 | 3,803 | 0 |
-
-40 source columns, 90% of rows retained.
-
-**The tradeoff, stated plainly:** this fills 168,102 cells, a median of 11 per
-row out of 26 eligible columns. That is a lot of inferred zeros, and the
-argument for each is structural rather than statistical. Every row carries
-`n_zero_filled` so you can see how much of it leaned on the rule, and you can
-filter to rows with few fills if a particular analysis needs it.
-
-Derived ratio columns can still be NA where a denominator fell under the $1M
-floor (401 rows for `gross_margin`). Those are computed conveniences, not
-source data, so they do not disqualify a row.
-
-## Open decisions for the team
-
-1. **Do rows with `flag_bs_identity` belong in the benchmarking set?** 13% of
-   annual rows carry it. The argument for keeping them is that a balance sheet
-   failing to foot says nothing about the income statement, so revenue and
-   margin work is unaffected. The argument against is that a source that gets
-   the balance sheet wrong may be unreliable throughout. Someone should decide
-   this on purpose.
-2. **Full join or inner join for the panel?** See decision 8.
-3. **The four-period ceiling.** See below.
-
-## The limitation that outranks all of the above
-
-No ticker has more than four periods in either file. Annual gives four fiscal
-years per company. Quarterly gives four quarters, meaning one year, not four.
-
-A two-year forward P&L projection built on four annual observations is
-extrapolation from a four-point line. There is no seasonality to learn and no
-out-of-sample period to validate against. What this data genuinely supports is
-cross-sectional margin benchmarking: where a given cost structure sits relative
-to 4,400 peers.
-
-This should be settled before anyone commits to a forecasting method, and it is
-worth raising with the challenge advisor.
+| Date | Change | By |
+|---|---|---|
+| 2026-09-22 | Added decisions 8 (split ratio floors) and 12 (`margin_unreliable`) after profiling found gross margins to -112 and net margins to 155 in the shipped modeling table. | TBD |
+| 2026-09-22 | Rewritten. Measured facts moved to the generated `data_dictionary.md`; this file now holds judgment calls only. Owner and date columns added because the previous version had none. | TBD |

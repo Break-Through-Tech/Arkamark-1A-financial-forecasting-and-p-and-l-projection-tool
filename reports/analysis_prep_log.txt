@@ -1,4 +1,4 @@
-Analysis prep - 2026-09-16 18:51
+Analysis prep - 2026-09-22 18:51
 ==============================================================================
 MODELING LAYER. Decisions active on this run:
   zero_revenue_to_na    : TRUE
@@ -19,14 +19,18 @@ annual
               is imputed anywhere in this table. Set
               CFG$impute_absent_as_zero <- TRUE to include them.
   DECISION 4: derived 8 ratios. NA counts:
-                gross_margin         401
-                operating_margin     401
-                net_margin           401
-                ocf_margin           401
+                gross_margin        1220
+                operating_margin    1220
+                net_margin          1220
+                ocf_margin          1220
                 current_ratio        135
                 debt_to_equity        82
                 asset_turnover        19
                 effective_tax       7034
+              margin floor CFG$min_revenue_denom = 10,000,000; balance-sheet floor CFG$min_denominator = 1,000,000
+  DECISION 4b: margin_unreliable TRUE on 861 rows (|net income| > 5x revenue). Marked, not removed.
+              Holding companies and loss-making small caps.
+              Exclude with !margin_unreliable before benchmarking.
   DECISION 5: skipped. Outliers left intact. Set
               CFG$winsor_probs <- c(0.01, 0.99) to clamp them.
   VERIFIED: 0 nulls across 15 source columns
@@ -40,7 +44,7 @@ annual
     flag_negative_equity            859 rows
     flag_period_gap                  37 rows
     Filter these yourself if your analysis requires it.
-  wrote 15732 rows x 37 cols -> fin_analysis_annual.csv
+  wrote 15732 rows x 38 cols -> fin_analysis_annual.csv
   balanced (4 periods): 15216 rows, 3804 tickers
 
 ------------------------------------------------------------------------------
@@ -54,14 +58,18 @@ quarterly
               is imputed anywhere in this table. Set
               CFG$impute_absent_as_zero <- TRUE to include them.
   DECISION 4: derived 8 ratios. NA counts:
-                gross_margin         628
-                operating_margin     628
-                net_margin           628
-                ocf_margin           628
+                gross_margin        2299
+                operating_margin    2299
+                net_margin          2299
+                ocf_margin          2299
                 current_ratio        109
                 debt_to_equity        53
                 asset_turnover         2
                 effective_tax       8818
+              margin floor CFG$min_revenue_denom = 10,000,000; balance-sheet floor CFG$min_denominator = 1,000,000
+  DECISION 4b: margin_unreliable TRUE on 816 rows (|net income| > 5x revenue). Marked, not removed.
+              Holding companies and loss-making small caps.
+              Exclude with !margin_unreliable before benchmarking.
   DECISION 5: skipped. Outliers left intact. Set
               CFG$winsor_probs <- c(0.01, 0.99) to clamp them.
   VERIFIED: 0 nulls across 15 source columns
@@ -75,7 +83,7 @@ quarterly
     flag_negative_equity            795 rows
     flag_period_gap                  15 rows
     Filter these yourself if your analysis requires it.
-  wrote 15427 rows x 37 cols -> fin_analysis_quarterly.csv
+  wrote 15427 rows x 38 cols -> fin_analysis_quarterly.csv
   balanced (4 periods): 15212 rows, 3803 tickers
 
 ==============================================================================
